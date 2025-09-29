@@ -1,60 +1,62 @@
+// controller for usage table
+
 // Import required libraries and modules
-const fixturesModel = require('../models/fixturesModel');
+//const fixturesModel = require('../models/fixturesModel');
 const { pool } = require('../db.js');
 
-// Class for handling fixtures
-class fixturesController {
+// Class for handling usage
+class usageController {
    
-    //READ all fixtures
-    static async getAllFixtures(req, res) {
+    //READ all usage
+    static async getAllUsage(req, res) {
         try {
-            const query = 'SELECT * FROM fixtures ORDER BY id ASC;';
+            const query = 'SELECT * FROM usage ORDER BY fixture_id ASC;';
             const result = await pool.query(query);
             res.json(result.rows);
         }
         catch (error) {
-            console.error('Database error (getAllFixtures):', error);
+            console.error('Database error (getAllUsage):', error);
             res.status(500).json({ error: 'Database query failed' });
         }
     }
 
 
 
-    //READ Fixtures by ID
+    //READ Usage by ID
 
-    static async getFixtureById(req, res) {
+    static async getUsageById(req, res) {
         try {
-            const id = parseInt(req.params.id, 10);
+            const id = parseInt(req.params.fixture_id, 10);
             if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid or missing id parameter' });
 
-                const query = 'SELECT * FROM fixtures WHERE id = $1';
+                const query = 'SELECT * FROM usage WHERE fixture_id = $1';
 
                 const result = await pool.query(query, [id]);
                 if (result.rows.length === 0) return res.status(404).json({ error: `No result found for id: ${id}` });
                 res.json(result.rows[0]);
         } 
         catch (error) {
-            console.error('Database error (getFixtureById):', error);
+            console.error('Database error (getUsageById):', error);
             res.status(500).json({ error: 'Database query failed' });
         }
         }
 
-    //CREATE Fixtures
+    //CREATE Usage
 
-    static async postFixture(req, res) {
+    static async postUsage(req, res) {
         try {
-            const { tester_type, fixture_id, rack, fixture_sn, test_type, ip_address, mac_address, parent, creator, create_date } = req.body;
-            if (!tester_type || !rack || !fixture_sn || !parent || !creator) {
-                return res.status(400).json({ error: 'Missing required fields: tester_type, rack, fixture_sn, parent, creator' });
+            const { fixture_id, test_slot, test_station, test_type, gpu_pn, gpu_sn, log_path, creator, create_date } = req.body;
+            if (!fixture_id || !test_slot || !test_station || !test_type || !gpu_pn || !gpu_sn || !log_path || !creator) {
+                return res.status(400).json({ error: 'Missing required fields: fixture_id, test_slot, test_station, test_type, gpu_pn, gpu_sn, log_path, creator ' });
             }
 
             const query = `
-                INSERT INTO fixtures (tester_type, fixture_id, rack, fixture_sn, test_type, ip_address, mac_address, parent, creator, create_date)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, Date.now())
+                INSERT INTO fixtures (fixture_id, test_slot, test_station, test_type, gpu_pn, gpu_sn, log_path, creator, create_date)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, Date.now())
                 RETURNING *;
             `;
 
-            const values = [tester_type, fixture_id, rack, fixture_sn, test_type, ip_address, mac_address, parent, creator, create_date];
+            const values = [fixture_id, test_slot, test_station, test_type, gpu_pn, gpu_sn, log_path, creator, create_date];
             const result = await pool.query(query, values);
             res.status(201).json(result.rows[0]);
         } 
@@ -64,14 +66,14 @@ class fixturesController {
         }
     }
      
-    // UPDATE Fixtures allowing partial updates
-    static async updateFixture(req, res) {
+    // UPDATE Usage allowing partial updates
+    static async updateUsage(req, res) {
         try {
-            const id = parseInt(req.params.id, 10);
+            const id = parseInt(req.params.fixture_id, 10);
             if (Number.isNaN(id)) {
                  return res.status(400).json({ error: 'Invalid or missing id parameter' });
             }
-            const allowed = ['tester_type', 'fixture_id', 'rack', 'fixture_sn', 'test_type', 'ip_address', 'mac_address', 'parent', 'create_date'];
+            const allowed = ['fixture_id', 'test_slot', 'test_station', 'test_type', 'gpu_pn', 'gpu_sn', 'log_path', 'creator', 'create_date'];
 
             const setClauses = [];
             const values = [];
@@ -93,7 +95,7 @@ class fixturesController {
 
             values.push(id);
             const query = `
-                UPDATE fixtures
+                UPDATE usage
                 SET ${setClauses.join(', ')}
                 WHERE id = $${paramIndex}
                 RETURNING *;
@@ -101,34 +103,34 @@ class fixturesController {
 
             const result = await pool.query(query, values);
             if (result.rows.length === 0) {
-                return res.status(404).json({ error: `No fixture found with id: ${id}` });
+                return res.status(404).json({ error: `No fixture usage found with id: ${id}` });
             }
-            res.json('Sussessfully updated fixture with id: ' + id + '. Updated row: ' + result.rows[0]);
+            res.json('Sussessfully updated fixture usage with id: ' + id + '. Updated row: ' + result.rows[0]);
           
         } catch (error) {
             console.error('Database error:', error);
             res.status(500).json({ error: 'Database update failed' });
         }
     }
-    // DELETE Fixtures
-    static async deleteFixture(req, res) {
+    // DELETE Usage
+    static async deleteUsage(req, res) {
         try {
-            const id = parseInt(req.params.id, 10);
+            const id = parseInt(req.params.fixture_id, 10);
             if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid or missing id parameter' });
-            const query = 'DELETE FROM fixtures WHERE id = $1 RETURNING *;';
+            const query = 'DELETE FROM usage WHERE id = $1 RETURNING *;';
             const values = [id];
             const result = await pool.query(query, values);
             if (result.rows.length === 0) {
-                return res.status(404).json({ error: `No fixture found with id: ${id}` });
+                return res.status(404).json({ error: `No fixture usage found with id: ${id}` });
             }
             else {
-                res.json({ message: `Fixture with id: ${id} deleted successfully.`, deletedRow: result.rows[0] });
+                res.json({ message: `Fixture Usage with id: ${id} deleted successfully.`, deletedRow: result.rows[0] });
             }
         }
          catch (error) {
-                console.error('Database error (deleteFixture):', error);
+                console.error('Database error (deleteUsage):', error);
                 res.status(500).json({ error: 'Database delete failed' });
             }
     }
 }
-    module.exports = fixturesController;
+    module.exports = usageController;
