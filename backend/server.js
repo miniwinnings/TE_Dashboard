@@ -31,7 +31,8 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Register routes
 const fixturesRouter = require('./routes/fixturesRoutes');
-app.use('/api/fixtures', fixturesRouter);
+app.use('/api/v1/fixtures', fixturesRouter);
+
 
 // Start app listening on PORT
 const PORT = process.env.PORT || 5000;

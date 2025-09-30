@@ -1,53 +1,55 @@
+// controller for health table
+
 // Import required libraries and modules
-const fixturesModel = require('../models/fixturesModel');
+//const fixturesModel = require('../models/fixturesModel');
 const { pool } = require('../db.js');
 
-// Class for handling fixtures
-class fixturesController {
+// Class for handling health
+class healthController {
    
-    //READ all fixtures
-    static async getAllFixtures(req, res) {
+    //READ all health
+    static async getAllHealth(req, res) {
         try {
-            const query = 'SELECT * FROM fixtures ORDER BY id ASC;';
+            const query = 'SELECT * FROM health ORDER BY fixture_id ASC;';
             const result = await pool.query(query);
             res.json(result.rows);
         }
         catch (error) {
-            console.error('Database error (getAllFixtures):', error);
+            console.error('Database error (getAllHealth):', error);
             res.status(500).json({ error: 'Database query failed' });
         }
     }
 
 
 
-    //READ Fixtures by ID
+    //READ Health by ID
 
-    static async getFixtureById(req, res) {
+    static async getHealthById(req, res) {
         try {
-            const id = parseInt(req.params.id, 10);
+            const id = parseInt(req.params.fixture_id, 10);
             if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid or missing id parameter' });
 
-                const query = 'SELECT * FROM fixtures WHERE id = $1';
+                const query = 'SELECT * FROM health WHERE fixture_id = $1';
 
                 const result = await pool.query(query, [id]);
                 if (result.rows.length === 0) return res.status(404).json({ error: `No result found for id: ${id}` });
                 res.json(result.rows[0]);
         } 
         catch (error) {
-            console.error('Database error (getFixtureById):', error);
+            console.error('Database error (getHealthById):', error);
             res.status(500).json({ error: 'Database query failed' });
         }
         }
 
-    //CREATE Fixtures
+    //CREATE Health
 
-    static async postFixture(req, res) {
+    static async postHealth(req, res) {
          try {
             //allowed fields
-            const allowed = ['tester_type', 'fixture_id', 'rack', 'fixture_sn', 'test_type', 'ip_address', 'mac_address', 'parent', 'creator'];
+            const allowed = ['fixture_id', 'status', 'comments', 'creator'];
 
             //required fields
-            const required = ['tester_type'];
+            const required = ['fixture_id'];
             //check for missing required fields
             const missing = required.filter(field => !Object.prototype.hasOwnProperty.call(req.body, field));
                 if (missing.length > 0) {
@@ -75,7 +77,7 @@ class fixturesController {
             }
             
             const query = `
-                INSERT INTO fixtures (${columns.join(', ')}, create_date)
+                INSERT INTO health (${columns.join(', ')}, create_date)
             VALUES(
                 ${placeholders.join(', ')},
                 NOW()
@@ -92,15 +94,16 @@ class fixturesController {
             res.status(500).json({ error: 'Database create failed' });
         }
         }
+    
      
-    // UPDATE Fixtures allowing partial updates
-    static async updateFixture(req, res) {
+    // UPDATE Fixtures allowing partial updates should be PATCH
+    static async updateHealth(req, res) {
         try {
-            const id = parseInt(req.params.id, 10);
+            const id = parseInt(req.params.primary_key, 10);
             if (Number.isNaN(id)) {
                  return res.status(400).json({ error: 'Invalid or missing id parameter' });
             }
-            const allowed = ['tester_type', 'fixture_id', 'rack', 'fixture_sn', 'test_type', 'ip_address', 'mac_address', 'parent', 'create_date'];
+            const allowed = ['fixture_id', 'status', 'comments', 'creator',];
 
             const setClauses = [];
             const values = [];
@@ -122,42 +125,42 @@ class fixturesController {
 
             values.push(id);
             const query = `
-                UPDATE fixtures
+                UPDATE health
                 SET ${setClauses.join(', ')}
-                WHERE id = $${paramIndex}
+                WHERE primary_key = $${paramIndex}
                 RETURNING *;
             `;
 
             const result = await pool.query(query, values);
             if (result.rows.length === 0) {
-                return res.status(404).json({ error: `No fixture found with id: ${id}` });
+                return res.status(404).json({ error: `No fixture health found with id: ${id}` });
             }
-            res.json('Sussessfully updated fixture with id: ' + id + '. Updated row: ' + result.rows[0]);
+            res.json('Sussessfully updated fixture health with id: ' + id + '. Updated row: ' + result.rows[0]);
           
         } catch (error) {
             console.error('Database error:', error);
             res.status(500).json({ error: 'Database update failed' });
         }
     }
-    // DELETE Fixtures
-    static async deleteFixture(req, res) {
+    // DELETE Health
+    static async deleteHealth(req, res) {
         try {
-            const id = parseInt(req.params.id, 10);
+            const id = parseInt(req.params.primary_key, 10);
             if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid or missing id parameter' });
-            const query = 'DELETE FROM fixtures WHERE id = $1 RETURNING *;';
+            const query = 'DELETE FROM health WHERE primary_key = $1 RETURNING *;';
             const values = [id];
             const result = await pool.query(query, values);
             if (result.rows.length === 0) {
-                return res.status(404).json({ error: `No fixture found with id: ${id}` });
+                return res.status(404).json({ error: `No fixture health found with id: ${id}` });
             }
             else {
-                res.json({ message: `Fixture with id: ${id} deleted successfully.`, deletedRow: result.rows[0] });
+                res.json({ message: `Fixture Health with primary_key: ${id} deleted successfully.`, deletedRow: result.rows[0] });
             }
         }
          catch (error) {
-                console.error('Database error (deleteFixture):', error);
+                console.error('Database error (deleteHealth):', error);
                 res.status(500).json({ error: 'Database delete failed' });
             }
     }
 }
-    module.exports = fixturesController;
+    module.exports = healthController;
